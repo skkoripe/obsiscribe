@@ -1,0 +1,11 @@
+{
+	"id": "obsiscribe",
+	"name": "Obsiscribe - Speech to Text",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Convert speech to text using local AI processing with Moonshine AI. No external API calls required.",
+	"author": "Obsiscribe Team",
+	"authorUrl": "",
+	"fundingUrl": "",
+	"isDesktopOnly": false
+}

@@ -1,0 +1,9 @@
+I would like to build an obsidian extension which converts speech to text. So basically i should be able to convert my speech from microphone to text
+i can save withing obsidian.
+
+Lets start by planning out how we will build this by creating a project plan file. 
+
+We wont be making any API calls for the transciption but will use a solution that runs natively on the system (run on edge device itself). 
+For this project lets use https://github.com/moonshine-ai/moonshine-js for this purpose.
+
+Follow the OOPs principle so that it is clean and I can share it across to other users later who can use this extension.
