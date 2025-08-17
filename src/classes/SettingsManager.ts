@@ -29,10 +29,28 @@ export class SettingsManager {
    * Load settings from disk
    */
   async loadSettings(): Promise<IPluginSettings> {
-    const loadedData = await this.plugin.loadData();
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
-    console.log('Settings loaded:', this.settings);
-    return this.settings;
+    try {
+      const loadedData = await this.plugin.loadData();
+      
+      // Only copy valid properties from loaded data
+      const validSettings: Partial<IPluginSettings> = {};
+      if (loadedData) {
+        const validKeys = Object.keys(DEFAULT_SETTINGS) as (keyof IPluginSettings)[];
+        for (const key of validKeys) {
+          if (loadedData[key] !== undefined) {
+            validSettings[key] = loadedData[key];
+          }
+        }
+      }
+      
+      this.settings = Object.assign({}, DEFAULT_SETTINGS, validSettings);
+      console.log('Settings loaded:', this.settings);
+      return this.settings;
+    } catch (error) {
+      console.error('Failed to load settings, using defaults:', error);
+      this.settings = { ...DEFAULT_SETTINGS };
+      return this.settings;
+    }
   }
 
   /**
@@ -78,11 +96,11 @@ export class SettingsManager {
     const errors: string[] = [];
 
     // Validate audio settings
-    if (settings.sampleRate && (settings.sampleRate < 8000 || settings.sampleRate > 48000)) {
+    if (settings.sampleRate !== undefined && (settings.sampleRate < 8000 || settings.sampleRate > 48000)) {
       errors.push('Sample rate must be between 8000 and 48000 Hz');
     }
 
-    if (settings.maxRecordingDuration && settings.maxRecordingDuration < 1) {
+    if (settings.maxRecordingDuration !== undefined && settings.maxRecordingDuration < 1) {
       errors.push('Maximum recording duration must be at least 1 second');
     }
 
