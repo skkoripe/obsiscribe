@@ -19,7 +19,8 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/tests/test-utils/testSetup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    '@moonshine-ai/moonshine-js': '<rootDir>/tests/test-utils/moonshine-mock.js'
+    '@moonshine-ai/moonshine-js': '<rootDir>/tests/test-utils/moonshine-mock.js',
+    'obsidian': '<rootDir>/tests/test-utils/obsidian-mock.js'
   },
   globals: {
     'ts-jest': {

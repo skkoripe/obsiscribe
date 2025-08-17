@@ -3,7 +3,7 @@ import { SpeechToTextPlugin } from './classes/SpeechToTextPlugin';
 
 // This is the main entry point for the Obsidian plugin
 export default class ObsiscribePlugin extends Plugin {
-  private speechToTextPlugin!: SpeechToTextPlugin;
+  public speechToTextPlugin!: SpeechToTextPlugin;
 
   async onload() {
     console.log('Loading Obsiscribe plugin...');

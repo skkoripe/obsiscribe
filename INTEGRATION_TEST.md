@@ -1,8 +1,8 @@
 # Obsidian Integration Test Guide
 
-## Phase 1.5: Basic Integration Testing
+## Phase 4: Obsidian Integration Testing
 
-This guide helps you test the Obsiscribe plugin with your Obsidian installation to verify the foundation works before proceeding to Phase 2.
+This guide helps you test the Obsiscribe plugin with your Obsidian installation to verify the TextInserter functionality works correctly with the Obsidian API.
 
 ## Prerequisites
 
@@ -114,6 +114,41 @@ Open Developer Console and look for:
 2. Check if all classes are properly imported
 3. Verify Obsidian API compatibility
 
+## TextInserter Integration Testing
+
+To test the TextInserter integration with the Obsidian API, follow these steps:
+
+1. Open a note in Obsidian
+2. Open the Developer Console (Ctrl/Cmd + Shift + I)
+3. Run the following commands:
+
+```javascript
+// Get the plugin instance
+const plugin = app.plugins.plugins.obsiscribe;
+
+// Access the SpeechToTextPlugin instance
+const speechToTextPlugin = plugin.speechToTextPlugin;
+
+// Access the TextInserter instance
+const textInserter = speechToTextPlugin.textInserter;
+
+// Test insertion at cursor position
+textInserter.insertText("Test text inserted at cursor", "cursor");
+
+// Test appending to the end of the note
+textInserter.insertText("Test text appended to note", "append");
+
+// Test prepending to the beginning of the note
+textInserter.insertText("Test text prepended to note", "prepend");
+
+// Test with formatting options
+textInserter.insertText("Formatted text", "cursor", {
+  prefix: "**",
+  suffix: "**",
+  addTimestamp: true
+});
+```
+
 ## Test Results Template
 
 After testing, document your results:
@@ -125,42 +160,38 @@ After testing, document your results:
 **Obsidian Version:** [Version]
 **Plugin Status:** [Success/Failed]
 
-### Plugin Loading
-- [ ] Plugin appears in list
-- [ ] Plugin enables successfully
-- [ ] No console errors
-
-### Settings Panel
-- [ ] Audio Settings section loads
-- [ ] Transcription Settings section loads
-- [ ] User Interface section loads
-- [ ] Text Insertion section loads
-- [ ] Advanced Settings section loads
+### TextInserter Integration
+- [ ] Plugin instance accessible via app.plugins.plugins.obsiscribe
+- [ ] SpeechToTextPlugin instance accessible via plugin.speechToTextPlugin
+- [ ] TextInserter instance accessible via speechToTextPlugin.textInserter
+- [ ] Text insertion at cursor position works
+- [ ] Text appending to end of note works
+- [ ] Text prepending to beginning of note works
+- [ ] Formatting options work (prefix, suffix, timestamp)
 
 ### Console Messages
-- [ ] Loading message appears
-- [ ] Initialization messages appear
+- [ ] Text insertion success messages appear
 - [ ] No error messages
 
 ### Issues Found
 [List any issues encountered]
 
 ### Next Steps
-[Ready for Phase 2 / Issues to resolve]
+[Ready for Phase 5 / Issues to resolve]
 ```
 
 ## Next Steps
 
 If integration test is successful:
-- ✅ **Proceed to Phase 2**: Audio Recording Implementation
-- ✅ **Foundation Validated**: Architecture works with Obsidian
-- ✅ **Settings UI Confirmed**: User interface integration successful
+- ✅ **Proceed to Phase 5**: User Interface Implementation
+- ✅ **TextInserter Validated**: Functionality works with Obsidian
+- ✅ **Integration Confirmed**: Plugin can interact with Obsidian notes
 
 If issues are found:
 - 🔧 **Debug and Fix**: Resolve integration issues
 - 🔄 **Retest**: Verify fixes work
-- ➡️ **Then Proceed**: Move to Phase 2 once stable
+- ➡️ **Then Proceed**: Move to Phase 5 once stable
 
 ---
 
-**Note**: This is a skeleton plugin - it won't have speech-to-text functionality yet. We're just testing the foundation before building the core features.
+**Note**: This integration test focuses specifically on the TextInserter functionality. The full plugin with speech-to-text capabilities will be tested in later phases.

@@ -12,11 +12,11 @@ import { UIController } from './UIController';
  */
 export class SpeechToTextPlugin {
   private settings: IPluginSettings;
-  private audioRecorder!: AudioRecorder;
-  private transcriber!: MoonshineTranscriber;
-  private textInserter!: TextInserter;
-  private settingsManager!: SettingsManager;
-  private uiController!: UIController;
+  public audioRecorder!: AudioRecorder;
+  public transcriber!: MoonshineTranscriber;
+  public textInserter!: TextInserter;
+  public settingsManager!: SettingsManager;
+  public uiController!: UIController;
 
   constructor(private plugin: Plugin) {
     this.settings = { ...DEFAULT_SETTINGS };
