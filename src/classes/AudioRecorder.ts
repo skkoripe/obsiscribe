@@ -37,10 +37,51 @@ export class AudioRecorder implements IAudioRecorder {
     }
 
     try {
-      // TODO: Implement actual recording logic
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('MediaDevices API not supported in this browser');
+      }
+
+      console.log('Starting audio recording...');
+
+      // Get microphone stream
+      this.audioStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: this.settings?.sampleRate || 16000,
+          channelCount: this.settings?.channelCount || 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+
+      // Clear previous recordings
+      this.recordedChunks = [];
+
+      // Create MediaRecorder
+      const mimeType = this.getSupportedMimeType();
+      this.mediaRecorder = new MediaRecorder(this.audioStream, {
+        mimeType: mimeType
+      });
+
+      // Set up event handlers
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+        }
+      };
+
+      this.mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        this.isCurrentlyRecording = false;
+      };
+
+      // Start recording
+      this.mediaRecorder.start(100); // Collect data every 100ms
       this.isCurrentlyRecording = true;
-      console.log('Recording started');
+
+      console.log('Audio recording started successfully');
     } catch (error) {
+      this.cleanup();
       throw new AudioRecorderError(
         'Failed to start recording',
         AudioRecorderErrorCode.RECORDING_FAILED,
@@ -61,19 +102,56 @@ export class AudioRecorder implements IAudioRecorder {
     }
 
     try {
-      // TODO: Implement actual stop recording logic
-      this.isCurrentlyRecording = false;
-      console.log('Recording stopped');
-      
-      // Return mock audio data for now
-      return {
-        buffer: new ArrayBuffer(0),
-        sampleRate: this.settings?.sampleRate || 16000,
-        channelCount: this.settings?.channelCount || 1,
-        duration: 0,
-        format: 'wav'
-      };
+      console.log('Stopping audio recording...');
+
+      return new Promise<AudioData>((resolve, reject) => {
+        if (!this.mediaRecorder) {
+          reject(new Error('MediaRecorder not available'));
+          return;
+        }
+
+        // Set up the stop handler
+        this.mediaRecorder.onstop = async () => {
+          try {
+            // Create blob from recorded chunks
+            const audioBlob = new Blob(this.recordedChunks, { 
+              type: this.mediaRecorder?.mimeType || 'audio/webm' 
+            });
+
+            // Convert blob to ArrayBuffer
+            const arrayBuffer = await audioBlob.arrayBuffer();
+
+            // Calculate duration (approximate)
+            const duration = this.recordedChunks.length * 0.1; // 100ms chunks
+
+            // Stop the audio stream
+            if (this.audioStream) {
+              this.audioStream.getTracks().forEach(track => track.stop());
+              this.audioStream = null;
+            }
+
+            this.isCurrentlyRecording = false;
+
+            const audioData: AudioData = {
+              buffer: arrayBuffer,
+              sampleRate: this.settings?.sampleRate || 16000,
+              channelCount: this.settings?.channelCount || 1,
+              duration: duration,
+              format: this.getFormatFromMimeType(this.mediaRecorder?.mimeType || 'audio/webm')
+            };
+
+            console.log('Audio recording stopped successfully, duration:', duration, 'seconds');
+            resolve(audioData);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        // Stop the recording
+        this.mediaRecorder.stop();
+      });
     } catch (error) {
+      this.cleanup();
       throw new AudioRecorderError(
         'Failed to stop recording',
         AudioRecorderErrorCode.RECORDING_FAILED,
@@ -94,10 +172,22 @@ export class AudioRecorder implements IAudioRecorder {
    */
   async hasPermission(): Promise<boolean> {
     try {
-      // TODO: Implement actual permission check
-      return true;
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        return false;
+      }
+
+      // Check if we already have permission
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      return permissionStatus.state === 'granted';
     } catch (error) {
-      return false;
+      // Fallback: try to access microphone to check permission
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+      } catch {
+        return false;
+      }
     }
   }
 
@@ -106,10 +196,30 @@ export class AudioRecorder implements IAudioRecorder {
    */
   async requestPermission(): Promise<boolean> {
     try {
-      // TODO: Implement actual permission request
-      console.log('Requesting microphone permission');
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('MediaDevices API not supported in this browser');
+      }
+
+      console.log('Requesting microphone permission...');
+      
+      // Request access to microphone
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: this.settings?.sampleRate || 16000,
+          channelCount: this.settings?.channelCount || 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+
+      // Stop the stream immediately - we just wanted permission
+      stream.getTracks().forEach(track => track.stop());
+      
+      console.log('Microphone permission granted');
       return true;
     } catch (error) {
+      console.error('Microphone permission denied:', error);
       throw new AudioRecorderError(
         'Permission denied',
         AudioRecorderErrorCode.PERMISSION_DENIED,
@@ -123,9 +233,22 @@ export class AudioRecorder implements IAudioRecorder {
    */
   async getAudioDevices(): Promise<MediaDeviceInfo[]> {
     try {
-      // TODO: Implement actual device enumeration
-      return [];
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        throw new Error('Device enumeration not supported in this browser');
+      }
+
+      console.log('Enumerating audio input devices...');
+      
+      // Get all media devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      
+      // Filter for audio input devices
+      const audioInputDevices = devices.filter(device => device.kind === 'audioinput');
+      
+      console.log('Found audio input devices:', audioInputDevices.length);
+      return audioInputDevices;
     } catch (error) {
+      console.error('Failed to enumerate audio devices:', error);
       throw new AudioRecorderError(
         'Failed to get audio devices',
         AudioRecorderErrorCode.DEVICE_NOT_FOUND,
@@ -151,21 +274,61 @@ export class AudioRecorder implements IAudioRecorder {
   }
 
   /**
-   * Clean up resources
+   * Get supported MIME type for MediaRecorder
    */
-  dispose(): void {
-    if (this.isCurrentlyRecording) {
-      // Force stop recording
-      this.isCurrentlyRecording = false;
+  private getSupportedMimeType(): string {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus',
+      'audio/wav'
+    ];
+
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        console.log('Using MIME type:', type);
+        return type;
+      }
     }
 
+    // Fallback to default
+    console.warn('No supported MIME type found, using default');
+    return '';
+  }
+
+  /**
+   * Get audio format from MIME type
+   */
+  private getFormatFromMimeType(mimeType: string): 'wav' | 'pcm' {
+    // For Phase 2, we'll convert all formats to WAV for consistency
+    // In Phase 3, we can add more sophisticated format handling if needed
+    if (mimeType.includes('wav')) return 'wav';
+    return 'wav'; // default to wav for all other formats
+  }
+
+  /**
+   * Clean up resources (internal helper)
+   */
+  private cleanup(): void {
     if (this.audioStream) {
       this.audioStream.getTracks().forEach(track => track.stop());
       this.audioStream = null;
     }
 
-    this.mediaRecorder = null;
+    if (this.mediaRecorder) {
+      this.mediaRecorder = null;
+    }
+
     this.recordedChunks = [];
+    this.isCurrentlyRecording = false;
+  }
+
+  /**
+   * Clean up resources
+   */
+  dispose(): void {
+    this.cleanup();
     console.log('AudioRecorder disposed');
   }
 }
