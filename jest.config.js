@@ -18,7 +18,8 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html'],
   setupFilesAfterEnv: ['<rootDir>/tests/test-utils/testSetup.ts'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1'
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '@moonshine-ai/moonshine-js': '<rootDir>/tests/test-utils/moonshine-mock.js'
   },
   globals: {
     'ts-jest': {
