@@ -18,6 +18,7 @@ export class UIController {
   async initialize(): Promise<void> {
     this.createRecordingButton();
     this.createStatusBarItem();
+    this.addStyles();
     console.log('UIController initialized');
   }
 

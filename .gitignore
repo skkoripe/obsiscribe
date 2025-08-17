@@ -192,3 +192,5 @@ models/
 docs/build/
 
 moonshine-guide
+
+.clinerules

@@ -147,11 +147,14 @@ class App {
   }
 }
 
+// Mock Notice constructor as a Jest mock
+const NoticeMock = jest.fn();
+
 module.exports = {
   Plugin,
   Editor,
   MarkdownView,
-  Notice,
+  Notice: NoticeMock,
   PluginSettingTab,
   Setting,
   App
