@@ -26,7 +26,7 @@ export class AudioRecorder implements IAudioRecorder {
   }
 
   /**
-   * Start recording audio from the microphone
+   * Start recording audio from the microphone using Web Audio API for raw PCM data
    */
   async startRecording(): Promise<void> {
     if (this.isCurrentlyRecording) {
@@ -41,13 +41,13 @@ export class AudioRecorder implements IAudioRecorder {
         throw new Error('MediaDevices API not supported in this browser');
       }
 
-      console.log('Starting audio recording...');
+      console.log('Starting raw PCM audio recording...');
 
-      // Get microphone stream
+      // Get microphone stream with high sample rate (we'll resample later)
       this.audioStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: this.settings?.sampleRate || 16000,
-          channelCount: this.settings?.channelCount || 1,
+          sampleRate: 48000, // Request high quality, we'll resample to 16kHz
+          channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
@@ -57,29 +57,47 @@ export class AudioRecorder implements IAudioRecorder {
       // Clear previous recordings
       this.recordedChunks = [];
 
-      // Create MediaRecorder
-      const mimeType = this.getSupportedMimeType();
-      this.mediaRecorder = new MediaRecorder(this.audioStream, {
-        mimeType: mimeType
-      });
-
-      // Set up event handlers
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.recordedChunks.push(event.data);
+      // **CRITICAL FIX**: Use Web Audio API for raw PCM data instead of MediaRecorder
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(this.audioStream);
+      
+      // Create ScriptProcessorNode for raw audio processing
+      const bufferSize = 4096;
+      const processor = audioContext.createScriptProcessor(bufferSize, 1, 1);
+      
+      console.log(`Audio context sample rate: ${audioContext.sampleRate}Hz`);
+      
+      processor.onaudioprocess = (event) => {
+        if (this.isCurrentlyRecording) {
+          const inputBuffer = event.inputBuffer;
+          const inputData = inputBuffer.getChannelData(0); // Get mono channel
+          
+          // Convert Float32Array to Int16Array for compatibility
+          const int16Array = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            // Convert float (-1 to 1) to int16 (-32768 to 32767)
+            int16Array[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+          }
+          
+          // Store as Blob for consistency with existing interface
+          const buffer = int16Array.buffer;
+          const blob = new Blob([buffer], { type: 'audio/pcm' });
+          this.recordedChunks.push(blob);
         }
       };
+      
+      // Connect the audio processing chain
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+      
+      // Store references for cleanup
+      (this as any).audioContext = audioContext;
+      (this as any).processor = processor;
+      (this as any).source = source;
 
-      this.mediaRecorder.onerror = (event) => {
-        console.error('MediaRecorder error:', event);
-        this.isCurrentlyRecording = false;
-      };
-
-      // Start recording
-      this.mediaRecorder.start(100); // Collect data every 100ms
       this.isCurrentlyRecording = true;
-
-      console.log('Audio recording started successfully');
+      console.log('Raw PCM audio recording started successfully');
+      
     } catch (error) {
       this.cleanup();
       throw new AudioRecorderError(
@@ -91,7 +109,7 @@ export class AudioRecorder implements IAudioRecorder {
   }
 
   /**
-   * Stop recording and return the audio data
+   * Stop recording and return the raw PCM audio data
    */
   async stopRecording(): Promise<AudioData> {
     if (!this.isCurrentlyRecording) {
@@ -102,54 +120,79 @@ export class AudioRecorder implements IAudioRecorder {
     }
 
     try {
-      console.log('Stopping audio recording...');
+      console.log('Stopping raw PCM audio recording...');
 
-      return new Promise<AudioData>((resolve, reject) => {
-        if (!this.mediaRecorder) {
-          reject(new Error('MediaRecorder not available'));
-          return;
-        }
+      // Stop recording flag
+      this.isCurrentlyRecording = false;
 
-        // Set up the stop handler
-        this.mediaRecorder.onstop = async () => {
-          try {
-            // Create blob from recorded chunks
-            const audioBlob = new Blob(this.recordedChunks, { 
-              type: this.mediaRecorder?.mimeType || 'audio/webm' 
-            });
+      // Clean up Web Audio API resources
+      const audioContext = (this as any).audioContext;
+      const processor = (this as any).processor;
+      const source = (this as any).source;
 
-            // Convert blob to ArrayBuffer
-            const arrayBuffer = await audioBlob.arrayBuffer();
+      if (processor) {
+        processor.disconnect();
+      }
+      if (source) {
+        source.disconnect();
+      }
+      if (audioContext && audioContext.state !== 'closed') {
+        await audioContext.close();
+      }
 
-            // Calculate duration (approximate)
-            const duration = this.recordedChunks.length * 0.1; // 100ms chunks
+      // Stop the audio stream
+      if (this.audioStream) {
+        this.audioStream.getTracks().forEach(track => track.stop());
+        this.audioStream = null;
+      }
 
-            // Stop the audio stream
-            if (this.audioStream) {
-              this.audioStream.getTracks().forEach(track => track.stop());
-              this.audioStream = null;
-            }
+      // Combine all recorded PCM chunks into a single ArrayBuffer
+      if (this.recordedChunks.length === 0) {
+        throw new Error('No audio data recorded');
+      }
 
-            this.isCurrentlyRecording = false;
+      console.log(`Combining ${this.recordedChunks.length} PCM audio chunks...`);
 
-            const audioData: AudioData = {
-              buffer: arrayBuffer,
-              sampleRate: this.settings?.sampleRate || 16000,
-              channelCount: this.settings?.channelCount || 1,
-              duration: duration,
-              format: this.getFormatFromMimeType(this.mediaRecorder?.mimeType || 'audio/webm')
-            };
+      // Calculate total size
+      let totalSize = 0;
+      const arrayBuffers: ArrayBuffer[] = [];
+      
+      for (const chunk of this.recordedChunks) {
+        const arrayBuffer = await chunk.arrayBuffer();
+        arrayBuffers.push(arrayBuffer);
+        totalSize += arrayBuffer.byteLength;
+      }
 
-            console.log('Audio recording stopped successfully, duration:', duration, 'seconds');
-            resolve(audioData);
-          } catch (error) {
-            reject(error);
-          }
-        };
+      // Combine all chunks into a single ArrayBuffer
+      const combinedBuffer = new ArrayBuffer(totalSize);
+      const combinedView = new Uint8Array(combinedBuffer);
+      let offset = 0;
 
-        // Stop the recording
-        this.mediaRecorder.stop();
-      });
+      for (const buffer of arrayBuffers) {
+        const view = new Uint8Array(buffer);
+        combinedView.set(view, offset);
+        offset += buffer.byteLength;
+      }
+
+      // Calculate duration based on sample rate and data size
+      const sampleRate = audioContext?.sampleRate || 48000;
+      const bytesPerSample = 2; // 16-bit = 2 bytes
+      const totalSamples = totalSize / bytesPerSample;
+      const duration = totalSamples / sampleRate;
+
+      console.log(`Raw PCM audio: ${totalSize} bytes, ${duration.toFixed(2)}s at ${sampleRate}Hz`);
+
+      const audioData: AudioData = {
+        buffer: combinedBuffer,
+        sampleRate: sampleRate,
+        channelCount: 1,
+        duration: duration,
+        format: 'pcm'
+      };
+
+      console.log('Raw PCM audio recording stopped successfully');
+      return audioData;
+
     } catch (error) {
       this.cleanup();
       throw new AudioRecorderError(

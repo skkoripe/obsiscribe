@@ -36,6 +36,8 @@
     "typescript": "4.7.4"
   },
   "dependencies": {
-    "@moonshine-ai/moonshine-js": "^0.1.29"
+    "mic": "^2.1.2",
+    "sherpa-onnx-darwin-arm64": "^1.12.9",
+    "sherpa-onnx-node": "^1.12.9"
   }
 }

@@ -1,0 +1,83 @@
+/* Obsiscribe Plugin Styles */
+
+.obsiscribe-microphone-button {
+  background: #4CAF50;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.obsiscribe-microphone-button:hover {
+  background: #45a049;
+  transform: scale(1.05);
+}
+
+.obsiscribe-microphone-button.recording {
+  background: #f44336;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.obsiscribe-status-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 15px;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.obsiscribe-status-indicator.success {
+  background: #4CAF50;
+}
+
+.obsiscribe-status-indicator.error {
+  background: #f44336;
+}
+
+.obsiscribe-status-indicator.info {
+  background: #2196F3;
+}
+
+.obsiscribe-settings-container {
+  padding: 20px;
+}
+
+.obsiscribe-setting-item {
+  margin-bottom: 15px;
+}
+
+.obsiscribe-setting-item label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.obsiscribe-setting-item input,
+.obsiscribe-setting-item select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.obsiscribe-setting-item input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}

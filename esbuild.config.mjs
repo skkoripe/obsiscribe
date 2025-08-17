@@ -31,6 +31,8 @@ const context = await esbuild.context({
 		'@lezer/common',
 		'@lezer/highlight',
 		'@lezer/lr',
+		'sherpa-onnx-node',
+		'sherpa-onnx-darwin-arm64',
 		...builtins],
 	format: 'cjs',
 	target: 'es2020',

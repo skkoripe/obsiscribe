@@ -1,11 +1,11 @@
 {
 	"id": "obsiscribe",
-	"name": "Obsiscribe - Speech to Text",
-	"version": "1.0.0",
+	"name": "Obsiscribe",
+	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "Convert speech to text using local AI processing with Moonshine AI. No external API calls required.",
+	"description": "AI-powered speech-to-text plugin for Obsidian using local Moonshine AI model",
 	"author": "Obsiscribe Team",
-	"authorUrl": "",
-	"fundingUrl": "",
+	"authorUrl": "https://github.com/skkoripe/obsiscribe",
+	"fundingUrl": "https://github.com/skkoripe/obsiscribe",
 	"isDesktopOnly": false
 }
