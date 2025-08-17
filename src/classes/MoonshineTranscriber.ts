@@ -300,57 +300,17 @@ export class MoonshineTranscriber implements ITranscriber {
     }
 
     try {
-      console.log('🎤 Starting comprehensive audio analysis and transcription...');
       const startTime = Date.now();
-
-      // **STEP 1: ANALYZE INPUT AUDIO DATA**
-      console.log('📊 INPUT AUDIO ANALYSIS:');
-      console.log(`   • Buffer size: ${audioData.buffer.byteLength} bytes`);
-      console.log(`   • Sample rate: ${audioData.sampleRate}Hz`);
-      console.log(`   • Duration: ${audioData.duration.toFixed(2)}s`);
-      console.log(`   • Channel count: ${audioData.channelCount}`);
-      console.log(`   • Format: ${audioData.format}`);
 
       // Convert audio data to Float32Array
       let audioSamples = this.convertAudioBufferToFloat32Array(audioData.buffer, audioData.sampleRate);
-      console.log(`   • Converted samples: ${audioSamples.length}`);
 
-      // **STEP 2: ANALYZE ORIGINAL AUDIO QUALITY**
-      const originalAnalysis = this.analyzeAudioQuality(audioSamples, audioData.sampleRate, 'ORIGINAL');
-
-      // **STEP 3: RESAMPLE IF NEEDED**
+      // Resample to 16kHz if needed (required by Moonshine AI)
       let finalSampleRate = audioData.sampleRate;
       if (audioData.sampleRate !== 16000) {
-        console.log(`🔄 Resampling audio: ${audioData.sampleRate}Hz → 16000Hz`);
         audioSamples = this.resampleAudio(audioSamples, audioData.sampleRate, 16000);
         finalSampleRate = 16000;
-        console.log(`✅ Resampled: ${audioSamples.length} samples at 16kHz`);
-        
-        // **STEP 4: ANALYZE RESAMPLED AUDIO QUALITY**
-        const resampledAnalysis = this.analyzeAudioQuality(audioSamples, finalSampleRate, 'RESAMPLED');
-        
-        // **STEP 5: COMPARE AUDIO QUALITY**
-        console.log('🔍 AUDIO QUALITY COMPARISON:');
-        console.log(`   • Original RMS: ${originalAnalysis.rms.toFixed(6)} → Resampled RMS: ${resampledAnalysis.rms.toFixed(6)}`);
-        console.log(`   • Speech likelihood: ${originalAnalysis.speechLikelihood.toFixed(1)}% → ${resampledAnalysis.speechLikelihood.toFixed(1)}%`);
-        console.log(`   • Dynamic range: ${originalAnalysis.dynamicRange.toFixed(6)} → ${resampledAnalysis.dynamicRange.toFixed(6)}`);
       }
-
-      // **STEP 6: FINAL AUDIO VALIDATION**
-      const finalAnalysis = this.analyzeAudioQuality(audioSamples, finalSampleRate, 'FINAL');
-      
-      console.log('🎯 FINAL AUDIO VALIDATION:');
-      console.log(`   • Audio has content: ${finalAnalysis.hasContent ? '✅ YES' : '❌ NO'}`);
-      console.log(`   • Sufficient duration: ${finalAnalysis.duration > 0.5 ? '✅ YES' : '❌ NO'} (${finalAnalysis.duration.toFixed(2)}s)`);
-      console.log(`   • Good signal level: ${finalAnalysis.rms > 0.001 ? '✅ YES' : '❌ NO'} (RMS: ${finalAnalysis.rms.toFixed(6)})`);
-      console.log(`   • Speech-like patterns: ${finalAnalysis.speechLikelihood > 10 ? '✅ YES' : '❌ NO'} (${finalAnalysis.speechLikelihood.toFixed(1)}%)`);
-      console.log(`   • Frequency distribution: ${finalAnalysis.frequencySpread > 0.1 ? '✅ GOOD' : '❌ POOR'} (${finalAnalysis.frequencySpread.toFixed(3)})`);
-
-      // **STEP 7: PROCEED WITH TRANSCRIPTION**
-      console.log('🚀 Proceeding with Sherpa ONNX transcription...');
-
-      // **CRITICAL FIX**: Use the correct Sherpa ONNX API pattern from working test scripts
-      console.log('🚀 Using correct Sherpa ONNX API pattern...');
       
       // Load Sherpa ONNX native module
       const sherpa = await loadSherpaONNX();
@@ -487,15 +447,6 @@ export class MoonshineTranscriber implements ITranscriber {
         processingTime: processingTime,
         language: this.settings?.language || 'en'
       };
-
-      // **STEP 8: FINAL RESULT ANALYSIS**
-      if (result.text && result.text.trim()) {
-        console.log('🎉 SUCCESS! Transcription result:', transcriptionResult);
-      } else {
-        console.log('⚠️ NO SPEECH DETECTED - Debugging summary:');
-        console.log(`   • Audio quality score: ${this.calculateAudioQualityScore(finalAnalysis)}/100`);
-        console.log(`   • Recommended fixes: ${this.getAudioQualityRecommendations(finalAnalysis).join(', ')}`);
-      }
 
       return transcriptionResult;
 

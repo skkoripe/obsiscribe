@@ -175,11 +175,21 @@ jest_*
 # package-lock.json  # if using yarn
 # yarn.lock          # if using npm
 
-# AI/ML models (for Moonshine AI)
+# AI/ML models and native modules (downloaded via script)
 models/
 *.model
 *.bin
 *.onnx
+
+# Native modules (platform-specific binaries)
+native-modules/
+sherpa-onnx-*/
+sherpa-onnx-moonshine-*/
+
+# Downloaded archives
+*.tar.bz2
+*.archive
+temp_extract/
 
 # Audio test files
 *.wav

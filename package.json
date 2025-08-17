@@ -4,12 +4,16 @@
   "description": "Obsidian plugin for speech-to-text conversion using Moonshine AI",
   "main": "main.js",
   "scripts": {
-    "dev": "node esbuild.config.mjs",
-    "build": "npm test && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs development",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "setup": "node scripts/download-models.js",
+    "postinstall": "npm run setup",
+    "release": "node scripts/prepare-release.js",
+    "prerelease": "npm run build && npm test"
   },
   "keywords": [
     "obsidian",
